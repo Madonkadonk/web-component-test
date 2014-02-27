@@ -1,0 +1,58 @@
+<html>
+<head>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/polymer/0.1.4/platform.js"></script>
+	<link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
+	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+	<script>
+		var ProfileCard = document.registerElement('profile-card', {
+			prototype: Object.create(HTMLElement.prototype, {
+				createdCallback: {
+					value: function(){
+						var shadow = this.createShadowRoot();
+						//var shadow = this;
+						var dom = $('<div class="card">');
+						var text_div = $('<div class="text_div">');
+						dom.append('<style>.card { background: white; display: inline-block; border: 1px solid black; padding: 10px; } .text_div{ float: left; margin-right: 20px;  } ::content img.image{ float: right; }</style>');
+						dom.append(text_div);
+						text_div.append('<content select="h1.name" />');
+						text_div.append('<div>Description: </div>');
+						//text_div.append('<content select="div.description" />');
+						text_div.append($(this).find('.description'));
+						$(this).on('remove_description', function(el){
+							text_div.find('.description').remove();
+						}); 
+						dom.append('<content select="img.image" />');
+						$(shadow).html(dom);
+						$(this).draggable({stack: 'profile-card'});
+					}
+				}
+			})
+		});
+		$(document).ready(function(){
+			$('#btn').on('click', function(){
+				$('profile-card').trigger('remove_description');
+			});
+		});
+
+	</script>
+</head>
+<body>
+	<profile-card>
+		<h1 class="name">Test Div</h1>
+		<div class="description">Test Description</div>
+		<img class="image" src="http://www.iiacanadanationalconference.com/wp-content/uploads/2013/01/test.jpg" />
+	</profile-card>
+	<profile-card>
+		<h1 class="name">Test Div 2</h1>
+		<div class="description">Test Description 2</div>
+		<img class="image" src="http://www.iiacanadanationalconference.com/wp-content/uploads/2013/01/test.jpg" />
+	</profile-card>
+	<profile-card>
+		<h1 class="name">Test Div 3</h1>
+		<div class="description">Test Description 3</div>
+		<img class="image" src="http://www.iiacanadanationalconference.com/wp-content/uploads/2013/01/test.jpg" />
+	</profile-card>
+	<button id="btn">Remove Descriptions</button>
+</body>
+</html>
