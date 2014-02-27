@@ -4,34 +4,92 @@
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/polymer/0.1.4/platform.js"></script>
 	<link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
 	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
 	<script>
+		socket = io.connect();
 		var ProfileCard = document.registerElement('profile-card', {
-			prototype: Object.create(HTMLElement.prototype, {
-				createdCallback: {
-					value: function(){
-						var shadow = this.createShadowRoot();
-						//var shadow = this;
-						var dom = $('<div class="card">');
-						var text_div = $('<div class="text_div">');
-						dom.append('<style>.card { background: white; display: inline-block; border: 1px solid black; padding: 10px; } .text_div{ float: left; margin-right: 20px;  } ::content img.image{ float: right; }</style>');
-						dom.append(text_div);
-						text_div.append('<content select="h1.name" />');
-						text_div.append('<div>Description: </div>');
-						//text_div.append('<content select="div.description" />');
-						text_div.append($(this).find('.description'));
-						$(this).on('remove_description', function(el){
-							text_div.find('.description').remove();
-						}); 
-						dom.append('<content select="img.image" />');
-						$(shadow).html(dom);
-						$(this).draggable({stack: 'profile-card'});
+			prototype: Object.create(HTMLElement.prototype, (function(){
+					var shadow = shadow || [];
+					return {
+						createdCallback: {
+							value:function(){
+								shadow.push(this.createShadowRoot());
+								this.shadowPos = shadow.length - 1;
+								var self = this;
+
+								var dom = $('<div class="card">');
+								var text_div = $('<div class="text_div">');
+
+								dom.append('<style>.card { background: white; display: inline-block; border: 1px solid black; padding: 10px; } .text_div{ margin-right: 20px;  } ::content img.image{  }</style>');
+								dom.append('<content select="img.image" />');
+								dom.append(text_div);
+								
+								text_div.append('<content select="h1.name" />');
+								text_div.append('<button>Emit Button</button>');
+								text_div.append('<div>Description: </div>');
+								text_div.append($(this).find('.description'));
+								
+								text_div.find('button').on('click', function(){
+									socket.emit('client_emit', self.shadowPos);
+								});
+								
+								$(this).on('remove_description', function(el){
+									console.log(self.shadowPos);
+									$(shadow[self.shadowPos].children[0]).find('div').filter('.description').remove();
+								}); 
+								
+								if($(this).attr('alignment') == 'vertical') {
+									text_div.css({float: ''});
+									dom.find('content[select="img.image"]').css({float: ''});
+								}
+								else {
+									text_div.css({float: 'left'});
+									dom.find('content[select="img.image"]').css({float: 'right'});
+								}
+								
+								
+								$(shadow[this.shadowPos]).html(dom);
+								$(this).draggable({stack: 'profile-card'});
+							}
+						},
+						attachedCallback:
+						{
+							value: function(){
+								var self = this;
+								socket.on('server_emit_' + this.shadowPos, function(data){
+									$(shadow[self.shadowPos].children[0]).find('.text_div').append('<div>' + data + '</div>');
+								});
+							}
+						},
+						detachedCallback:
+						{
+							value: function(){
+							}
+						},
+						attributeChangedCallback: {
+							value: function(attrName, oldVal, newVal){
+								if(attrName == 'alignment'){
+									if(newVal == 'vertical') {
+										$(shadow[this.shadowPos].children[0]).find('.text_div').css({float: ''});
+										$(shadow[this.shadowPos].children[0]).find('content[select="img.image"]').css({float: ''});
+									}
+									else {
+										$(shadow[this.shadowPos].children[0]).find('.text_div').css({float: 'left'});
+										$(shadow[this.shadowPos].children[0]).find('content[select="img.image"]').css({float: 'right'});
+									}
+								}
+							}
+						}
 					}
-				}
-			})
+			})())
 		});
+
 		$(document).ready(function(){
-			$('#btn').on('click', function(){
+			$('#btn1').on('click', function(){
 				$('profile-card').trigger('remove_description');
+			});
+			$('#btn2').on('click', function(){
+				$('profile-card:first').attr('alignment', 'vertical');
 			});
 		});
 
@@ -42,8 +100,9 @@
 		<h1 class="name">Test Div</h1>
 		<div class="description">Test Description</div>
 		<img class="image" src="http://www.iiacanadanationalconference.com/wp-content/uploads/2013/01/test.jpg" />
+		<div class="notshown">Tst</div>
 	</profile-card>
-	<profile-card>
+	<profile-card alignment="vertical">
 		<h1 class="name">Test Div 2</h1>
 		<div class="description">Test Description 2</div>
 		<img class="image" src="http://www.iiacanadanationalconference.com/wp-content/uploads/2013/01/test.jpg" />
@@ -53,6 +112,7 @@
 		<div class="description">Test Description 3</div>
 		<img class="image" src="http://www.iiacanadanationalconference.com/wp-content/uploads/2013/01/test.jpg" />
 	</profile-card>
-	<button id="btn">Remove Descriptions</button>
+	<button id="btn1">Remove Descriptions</button>
+	<button id="btn2">Make Test Div vertical</button>
 </body>
 </html>
